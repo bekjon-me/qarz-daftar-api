@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+src/generated
+CLAUDE.md
