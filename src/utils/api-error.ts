@@ -28,4 +28,12 @@ export class ApiError extends Error {
   static internal(message = 'Internal server error') {
     return new ApiError(500, message);
   }
+
+  static serviceUnavailable(message = 'Service temporarily unavailable') {
+    return new ApiError(503, message);
+  }
+
+  static unprocessableEntity(message: string, errors: string[] = []) {
+    return new ApiError(422, message, errors);
+  }
 }
