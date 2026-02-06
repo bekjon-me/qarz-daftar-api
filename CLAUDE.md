@@ -1,3 +1,7 @@
+# IMPORTANT
+
+First read ../CLAUDE.md file
+
 # CLAUDE.md — qarz-daftar-api
 
 ## Project Overview
@@ -37,6 +41,7 @@ src/
 ### Adding a New Feature
 
 Create a new directory under `src/features/<feature-name>/` with:
+
 - `<feature>.routes.ts` — Route definitions
 - `<feature>.controller.ts` — Request handlers (thin; delegates to service)
 - `<feature>.service.ts` — Business logic and database queries
@@ -76,6 +81,7 @@ Register routes in `src/app.ts`.
 ### Controller Pattern
 
 Controllers should be thin:
+
 1. Extract request data (`req.body`, `req.params`, `req.query`)
 2. Call the appropriate service function
 3. Return the response
@@ -84,6 +90,7 @@ Controllers should be thin:
 ### Service Pattern
 
 Services contain business logic:
+
 1. Validate business rules
 2. Interact with the database via Prisma
 3. Throw `ApiError` for error cases
@@ -97,17 +104,17 @@ Services contain business logic:
 
 ## Commands
 
-| Command               | Description                          |
-|-----------------------|--------------------------------------|
-| `pnpm dev`            | Start dev server with hot reload     |
-| `pnpm build`          | Compile TypeScript to `dist/`        |
-| `pnpm start`          | Run compiled server                  |
-| `pnpm lint`           | Run ESLint                           |
-| `pnpm lint:fix`       | Run ESLint with auto-fix             |
-| `pnpm format`         | Format code with Prettier            |
-| `pnpm prisma:generate`| Generate Prisma client               |
-| `pnpm prisma:migrate` | Run database migrations              |
-| `pnpm prisma:studio`  | Open Prisma Studio                   |
+| Command                | Description                      |
+| ---------------------- | -------------------------------- |
+| `pnpm dev`             | Start dev server with hot reload |
+| `pnpm build`           | Compile TypeScript to `dist/`    |
+| `pnpm start`           | Run compiled server              |
+| `pnpm lint`            | Run ESLint                       |
+| `pnpm lint:fix`        | Run ESLint with auto-fix         |
+| `pnpm format`          | Format code with Prettier        |
+| `pnpm prisma:generate` | Generate Prisma client           |
+| `pnpm prisma:migrate`  | Run database migrations          |
+| `pnpm prisma:studio`   | Open Prisma Studio               |
 
 ## Review Criteria
 

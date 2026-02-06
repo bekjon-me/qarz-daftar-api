@@ -123,7 +123,9 @@ export async function verifyOtp(phone: string, code: string) {
   const validatedPhone = validatePhone(phone);
 
   if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
-    throw ApiError.badRequest('Tasdiqlash kodi 6 ta raqamdan iborat bo\'lishi kerak');
+    throw ApiError.badRequest(
+      "Tasdiqlash kodi 6 ta raqamdan iborat bo'lishi kerak",
+    );
   }
 
   await otpService.verify(validatedPhone, code);
@@ -171,7 +173,11 @@ export async function googleSignIn(input: GoogleSignInInput) {
     throw ApiError.unauthorized('Google token yaroqsiz');
   }
 
-  const tokenInfo = (await res.json()) as { sub?: string; aud?: string; email?: string };
+  const tokenInfo = (await res.json()) as {
+    sub?: string;
+    aud?: string;
+    email?: string;
+  };
 
   // Verify the token belongs to the claimed user (sub = subject = user ID)
   if (tokenInfo.sub !== googleId) {
@@ -239,7 +245,7 @@ export async function updateName(userId: string, name: string) {
   }
 
   if (name.trim().length > 50) {
-    throw ApiError.badRequest("Ism 50 ta harfdan oshmasligi kerak");
+    throw ApiError.badRequest('Ism 50 ta harfdan oshmasligi kerak');
   }
 
   const user = await prisma.user.update({
@@ -264,7 +270,9 @@ export async function updatePhone(userId: string, phone: string) {
   });
 
   if (existingUser && existingUser.id !== userId) {
-    throw ApiError.badRequest("Bu telefon raqam boshqa foydalanuvchi tomonidan ishlatilmoqda");
+    throw ApiError.badRequest(
+      'Bu telefon raqam boshqa foydalanuvchi tomonidan ishlatilmoqda',
+    );
   }
 
   // Update user's phone

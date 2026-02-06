@@ -18,5 +18,12 @@ export const env = {
   OTP_COOLDOWN_SECONDS: parseInt(process.env.OTP_COOLDOWN_SECONDS || '60', 10),
 
   // Google
-  GOOGLE_CLIENT_ID: process.env.GOOGLE_WEB_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '',
+  GOOGLE_CLIENT_ID:
+    process.env.GOOGLE_WEB_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '',
+
+  // reCAPTCHA v3
+  RECAPTCHA_SECRET_KEY: process.env.RECAPTCHA_SECRET_KEY || '',
+  RECAPTCHA_SCORE_THRESHOLD: parseFloat(
+    process.env.RECAPTCHA_SCORE_THRESHOLD || '0.5',
+  ),
 } as const;

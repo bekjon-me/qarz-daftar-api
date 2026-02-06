@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as authService from './auth.service.js';
 import { AuthRequest } from '../../types/index.js';
+import { verifyRecaptcha } from '../../services/recaptcha.service.js';
 
 export async function register(
   req: Request,
@@ -36,7 +37,11 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 
 export async function sendOtp(req: Request, res: Response, next: NextFunction) {
   try {
-    const { phone } = req.body;
+    const { phone, recaptchaToken } = req.body;
+
+    // Verify reCAPTCHA
+    await verifyRecaptcha(recaptchaToken, 'sign_in');
+
     const result = await authService.sendOtp(phone);
 
     res.json({
@@ -74,7 +79,12 @@ export async function googleSignIn(
 ) {
   try {
     // Accept both idToken and accessToken for backward compatibility
-    const { idToken, accessToken, googleId, email, name } = req.body;
+    const { idToken, accessToken, googleId, email, name, recaptchaToken } =
+      req.body;
+
+    // Verify reCAPTCHA
+    await verifyRecaptcha(recaptchaToken, 'sign_in');
+
     const result = await authService.googleSignIn({
       idToken: idToken || accessToken,
       googleId,
