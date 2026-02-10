@@ -42,7 +42,7 @@ export async function verifyRecaptcha(
       },
     );
 
-    const data: RecaptchaVerifyResponse = await response.json();
+    const data = (await response.json()) as RecaptchaVerifyResponse;
     console.log('[reCAPTCHA] Response:', JSON.stringify(data, null, 2));
 
     if (!data.success) {

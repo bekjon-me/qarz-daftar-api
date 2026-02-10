@@ -39,8 +39,10 @@ export async function sendOtp(req: Request, res: Response, next: NextFunction) {
   try {
     const { phone, recaptchaToken } = req.body;
 
-    // Verify reCAPTCHA
-    await verifyRecaptcha(recaptchaToken, 'sign_in');
+    // Verify reCAPTCHA if token is provided (skipped on resend)
+    if (recaptchaToken) {
+      await verifyRecaptcha(recaptchaToken, 'send_otp');
+    }
 
     const result = await authService.sendOtp(phone);
 
@@ -78,15 +80,15 @@ export async function googleSignIn(
   next: NextFunction,
 ) {
   try {
-    // Accept both idToken and accessToken for backward compatibility
     const { idToken, accessToken, googleId, email, name, recaptchaToken } =
       req.body;
 
-    // Verify reCAPTCHA
-    await verifyRecaptcha(recaptchaToken, 'sign_in');
+    // Verify reCAPTCHA (token already validated by zod schema)
+    await verifyRecaptcha(recaptchaToken, 'google_sign_in');
 
     const result = await authService.googleSignIn({
-      idToken: idToken || accessToken,
+      idToken,
+      accessToken,
       googleId,
       email,
       name,

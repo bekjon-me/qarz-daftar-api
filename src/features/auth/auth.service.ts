@@ -4,24 +4,11 @@ import { prisma } from '../../config/database.js';
 import { env } from '../../config/env.js';
 import { ApiError } from '../../utils/api-error.js';
 import * as otpService from '../../services/otp.service.js';
-
-interface RegisterInput {
-  name?: string;
-  phone: string;
-  password: string;
-}
-
-interface LoginInput {
-  phone: string;
-  password: string;
-}
-
-interface GoogleSignInInput {
-  idToken: string;
-  googleId: string;
-  email?: string;
-  name?: string;
-}
+import type {
+  RegisterInput,
+  LoginInput,
+  GoogleSignInInput,
+} from './auth.schemas.js';
 
 function generateToken(userId: string): string {
   const options: SignOptions = {
@@ -36,30 +23,6 @@ const userSelect = {
   phone: true,
   createdAt: true,
 } as const;
-
-function validatePhone(phone: string): string {
-  if (!phone) {
-    throw ApiError.badRequest('Telefon raqam kiritilishi shart');
-  }
-
-  // Remove all non-digit characters
-  const digits = phone.replace(/\D/g, '');
-
-  // Validate Uzbekistan phone number (should be 12 digits: 998XXXXXXXXX)
-  if (digits.length !== 12) {
-    throw ApiError.badRequest(
-      "Telefon raqam noto'g'ri formatda. Masalan: +998901234567",
-    );
-  }
-
-  if (!digits.startsWith('998')) {
-    throw ApiError.badRequest(
-      "Faqat O'zbekiston telefon raqamlari qo'llab-quvvatlanadi (+998)",
-    );
-  }
-
-  return `+${digits}`;
-}
 
 export async function register(input: RegisterInput) {
   const existingUser = await prisma.user.findUnique({
@@ -114,24 +77,17 @@ export async function login(input: LoginInput) {
 }
 
 export async function sendOtp(phone: string) {
-  const validatedPhone = validatePhone(phone);
-  await otpService.generateAndSend(validatedPhone);
-  return { phone: validatedPhone };
+  // Phone is already validated and normalized by zod schema
+  await otpService.generateAndSend(phone);
+  return { phone };
 }
 
 export async function verifyOtp(phone: string, code: string) {
-  const validatedPhone = validatePhone(phone);
-
-  if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
-    throw ApiError.badRequest(
-      "Tasdiqlash kodi 6 ta raqamdan iborat bo'lishi kerak",
-    );
-  }
-
-  await otpService.verify(validatedPhone, code);
+  // Phone and code are already validated by zod schema
+  await otpService.verify(phone, code);
 
   let user = await prisma.user.findUnique({
-    where: { phone: validatedPhone },
+    where: { phone },
     select: userSelect,
   });
 
@@ -139,7 +95,7 @@ export async function verifyOtp(phone: string, code: string) {
 
   if (!user) {
     user = await prisma.user.create({
-      data: { phone: validatedPhone, name: 'Hurmatli mijoz' },
+      data: { phone, name: 'Hurmatli mijoz' },
       select: userSelect,
     });
     isNewUser = true;
@@ -153,12 +109,11 @@ export async function verifyOtp(phone: string, code: string) {
   return { user, token, isNewUser };
 }
 
-export async function googleSignIn(input: GoogleSignInInput) {
-  const { idToken, googleId, email, name } = input;
-
-  if (!googleId) {
-    throw ApiError.badRequest('Google ID kiritilishi shart');
-  }
+export async function googleSignIn(
+  input: Omit<GoogleSignInInput, 'recaptchaToken'>,
+) {
+  const { googleId, name } = input;
+  const idToken = input.idToken || input.accessToken;
 
   if (!idToken) {
     throw ApiError.badRequest('Google ID token kiritilishi shart');
@@ -240,17 +195,10 @@ export async function getProfile(userId: string) {
 }
 
 export async function updateName(userId: string, name: string) {
-  if (!name || name.trim().length < 2) {
-    throw ApiError.badRequest("Ism kamida 2 ta harfdan iborat bo'lishi kerak");
-  }
-
-  if (name.trim().length > 50) {
-    throw ApiError.badRequest('Ism 50 ta harfdan oshmasligi kerak');
-  }
-
+  // Name is already validated and trimmed by zod schema
   const user = await prisma.user.update({
     where: { id: userId },
-    data: { name: name.trim() },
+    data: { name },
     select: userSelect,
   });
 
@@ -262,11 +210,11 @@ export async function updateName(userId: string, name: string) {
  * No OTP verification needed since user is already authenticated via Google.
  */
 export async function updatePhone(userId: string, phone: string) {
-  const validatedPhone = validatePhone(phone);
+  // Phone is already validated and normalized by zod schema
 
   // Check if this phone is already used by another user
   const existingUser = await prisma.user.findUnique({
-    where: { phone: validatedPhone },
+    where: { phone },
   });
 
   if (existingUser && existingUser.id !== userId) {
@@ -278,7 +226,7 @@ export async function updatePhone(userId: string, phone: string) {
   // Update user's phone
   const user = await prisma.user.update({
     where: { id: userId },
-    data: { phone: validatedPhone },
+    data: { phone },
     select: userSelect,
   });
 
