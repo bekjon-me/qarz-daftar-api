@@ -6,6 +6,13 @@ datasource db {
   provider = "postgresql"
 }
 
+enum TransactionType {
+  DEBT
+  PAYMENT
+
+  @@map("transaction_type")
+}
+
 model User {
   id        String   @id @default(uuid())
   name      String   @default("Hurmatli mijoz")
@@ -15,7 +22,44 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  customers    Customer[]
+  transactions Transaction[]
+
   @@map("users")
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  phone     String?
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([userId])
+  @@map("customers")
+}
+
+model Transaction {
+  id         String          @id @default(uuid())
+  userId     String          @map("user_id")
+  customerId String          @map("customer_id")
+  type       TransactionType
+  amount     Int
+  note       String?
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([customerId])
+  @@index([userId, createdAt])
+  @@map("transactions")
 }
 
 model Otp {

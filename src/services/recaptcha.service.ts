@@ -53,14 +53,17 @@ export async function verifyRecaptcha(
       );
     }
 
-    console.log(data.score);
-
     const score = data.score ?? 0;
+    const threshold = env.RECAPTCHA_SCORE_THRESHOLD;
+
+    console.log(
+      `[reCAPTCHA] Score: ${score} | Threshold: ${threshold} | Action: ${data.action} | Expected: ${expectedAction} | Pass: ${score >= threshold}`,
+    );
 
     // Check if score meets threshold
-    if (score < env.RECAPTCHA_SCORE_THRESHOLD) {
+    if (score < threshold) {
       console.warn(
-        `reCAPTCHA score too low: ${score} < ${env.RECAPTCHA_SCORE_THRESHOLD}`,
+        `[reCAPTCHA] BLOCKED — score ${score} < threshold ${threshold}`,
       );
       throw ApiError.forbidden(
         'Suspicious activity detected. Please try again.',
@@ -70,11 +73,12 @@ export async function verifyRecaptcha(
     // Optionally verify the action matches
     if (expectedAction && data.action !== expectedAction) {
       console.warn(
-        `reCAPTCHA action mismatch: expected ${expectedAction}, got ${data.action}`,
+        `[reCAPTCHA] Action mismatch: expected "${expectedAction}", got "${data.action}"`,
       );
       throw ApiError.badRequest('reCAPTCHA action mismatch');
     }
 
+    console.log(`[reCAPTCHA] PASSED — score ${score}`);
     return { success: true, score };
   } catch (error) {
     if (error instanceof ApiError) {

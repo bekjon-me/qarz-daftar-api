@@ -2,6 +2,9 @@ import express, { type Express, type Request, type Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import authRoutes from './features/auth/auth.routes.js';
+import customerRoutes from './features/customer/customer.routes.js';
+import transactionRoutes from './features/transaction/transaction.routes.js';
+import dashboardRoutes from './features/dashboard/dashboard.routes.js';
 import { errorHandler } from './middleware/error-handler.js';
 
 const app: Express = express();
@@ -15,6 +18,9 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/transactions', transactionRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // 404 handler for unknown routes
 app.use((_req: Request, res: Response) => {
