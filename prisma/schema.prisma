@@ -14,16 +14,19 @@ enum TransactionType {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String   @default("Hurmatli mijoz")
-  phone     String   @unique
-  password  String?
-  googleId  String?  @unique @map("google_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(uuid())
+  name           String   @default("Hurmatli mijoz")
+  phone          String   @unique
+  password       String?
+  googleId       String?  @unique @map("google_id")
+  expoPushToken  String?  @map("expo_push_token")
+  telegramChatId String?  @map("telegram_chat_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
-  customers    Customer[]
-  transactions Transaction[]
+  customers     Customer[]
+  transactions  Transaction[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -37,8 +40,9 @@ model Customer {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  Transaction[]
+  notifications Notification[]
 
   @@index([userId])
   @@map("customers")
@@ -49,17 +53,47 @@ model Transaction {
   userId     String          @map("user_id")
   customerId String          @map("customer_id")
   type       TransactionType
-  amount     Int
-  note       String?
-  createdAt  DateTime        @default(now()) @map("created_at")
+  amount             Int
+  note               String?
+  expectedReturnDate DateTime?       @map("expected_return_date")
+  createdAt          DateTime        @default(now()) @map("created_at")
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  notification Notification?
 
   @@index([userId])
   @@index([customerId])
   @@index([userId, createdAt])
   @@map("transactions")
+}
+
+enum NotificationType {
+  PAYMENT_DUE
+  NEW_FEATURE
+
+  @@map("notification_type")
+}
+
+model Notification {
+  id         String           @id @default(uuid())
+  userId     String           @map("user_id")
+  type       NotificationType
+  title      String
+  message    String
+  isRead     Boolean          @default(false) @map("is_read")
+  // For PAYMENT_DUE: link to the customer + transaction that triggered it
+  customerId String?          @map("customer_id")
+  transactionId String?       @unique @map("transaction_id")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, isRead])
+  @@map("notifications")
 }
 
 model Otp {

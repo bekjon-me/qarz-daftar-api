@@ -15,6 +15,10 @@ export const createTransactionSchema = z.object({
     .max(500, 'Izoh 500 ta belgidan oshmasligi kerak')
     .transform((val) => val.trim())
     .optional(),
+  expectedReturnDate: z
+    .string()
+    .datetime({ offset: true, message: "Noto'g'ri sana formati" })
+    .optional(),
 });
 
 export const transactionListSchema = z.object({

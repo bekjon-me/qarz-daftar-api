@@ -27,6 +27,12 @@ export async function verifyRecaptcha(
 
   console.log('[reCAPTCHA] Verifying token for action:', expectedAction);
 
+  // Bypass for web development if dummy token is provided
+  if (env.NODE_ENV === 'development' && token === 'web_dummy_token') {
+    console.log('[reCAPTCHA] Bypassing verification for web_dummy_token');
+    return { success: true, score: 1.0 };
+  }
+
   try {
     const response = await fetch(
       'https://www.google.com/recaptcha/api/siteverify',

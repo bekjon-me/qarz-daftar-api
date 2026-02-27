@@ -1,6 +1,7 @@
 import app from './app.js';
 import { env } from './config/env.js';
 import { prisma } from './config/database.js';
+import { startScheduler } from './services/scheduler.service.js';
 
 async function main() {
   await prisma.$connect();
@@ -9,6 +10,9 @@ async function main() {
   const server = app.listen(env.PORT, () => {
     console.log(`Server running on port ${env.PORT} [${env.NODE_ENV}]`);
   });
+
+  // Start the daily notification scheduler
+  startScheduler();
 
   const shutdown = async (signal: string) => {
     console.log(`\n${signal} received. Shutting down gracefully...`);

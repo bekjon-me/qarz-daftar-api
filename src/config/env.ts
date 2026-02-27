@@ -26,4 +26,11 @@ export const env = {
   RECAPTCHA_SCORE_THRESHOLD: parseFloat(
     process.env.RECAPTCHA_SCORE_THRESHOLD || '0.5',
   ),
+
+  // Telegram Bot
+  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',
+  TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET || '',
+
+  // Notification scheduler cron (default: 04:00 UTC = 09:00 UZT)
+  CRON_SCHEDULE: process.env.CRON_SCHEDULE || '0 4 * * *',
 } as const;

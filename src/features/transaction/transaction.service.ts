@@ -12,6 +12,7 @@ const transactionSelect = {
   type: true,
   amount: true,
   note: true,
+  expectedReturnDate: true,
   createdAt: true,
   customer: {
     select: {
@@ -38,6 +39,9 @@ export async function create(userId: string, input: CreateTransactionInput) {
       type: input.type,
       amount: input.amount,
       note: input.note || null,
+      expectedReturnDate: input.expectedReturnDate
+        ? new Date(input.expectedReturnDate)
+        : null,
     },
     select: transactionSelect,
   });
@@ -49,6 +53,7 @@ export async function create(userId: string, input: CreateTransactionInput) {
     type: transaction.type,
     amount: transaction.amount,
     note: transaction.note,
+    expectedReturnDate: transaction.expectedReturnDate,
     createdAt: transaction.createdAt,
   };
 }
@@ -68,6 +73,7 @@ export async function listRecent(userId: string, input: TransactionListInput) {
     type: t.type,
     amount: t.amount,
     note: t.note,
+    expectedReturnDate: t.expectedReturnDate,
     createdAt: t.createdAt,
   }));
 }
@@ -114,6 +120,7 @@ export async function listByCustomer(
         type: true,
         amount: true,
         note: true,
+        expectedReturnDate: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
