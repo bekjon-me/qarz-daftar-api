@@ -1,5 +1,5 @@
 /**
- * Prisma seed script — creates test customers and overdue DEBT transactions.
+ * Prisma seed script — creates test shop, customers, and overdue DEBT transactions.
  *
  * Usage:
  *   pnpm seed                             # 5 default customers + overdue debts
@@ -8,9 +8,11 @@
  *   pnpm seed -- --phone +998908702909 --count 3
  *
  * What it does:
- *   1. Finds the target user (first user with customers, or by --phone flag)
- *   2. Creates N test customers with Uzbek names and phone numbers (if needed)
- *   3. Creates overdue DEBT transactions with various due dates
+ *   1. Finds the target user (first user, or by --phone flag)
+ *   2. Creates/finds the user's shop (or creates one)
+ *   3. Creates N test customers with Uzbek names and phone numbers
+ *   4. Creates overdue DEBT transactions with various due dates
+ *   5. Optionally creates an assistant user + membership
  */
 
 import { prisma } from '../src/config/database.js';
@@ -86,6 +88,69 @@ async function main() {
   }
 
   console.log(`👤 Foydalanuvchi: ${user.name} (${user.phone})`);
+
+  // Find or create the user's shop
+  let shopMembership = await prisma.shopMember.findFirst({
+    where: { userId: user.id, role: 'OWNER' },
+    include: { shop: true },
+  });
+
+  if (!shopMembership) {
+    const shopName = `${user.name} do'koni`;
+    console.log(`🏪 Do'kon yaratilmoqda: ${shopName}`);
+    const shop = await prisma.shop.create({
+      data: {
+        name: shopName,
+        members: {
+          create: {
+            userId: user.id,
+            role: 'OWNER',
+          },
+        },
+      },
+    });
+    shopMembership = await prisma.shopMember.findFirst({
+      where: { userId: user.id, shopId: shop.id },
+      include: { shop: true },
+    });
+  } else {
+    console.log(`🏪 Do'kon: ${shopMembership.shop.name}`);
+  }
+
+  const shopId = shopMembership!.shopId;
+
+  // Create assistant user (if not exists)
+  const assistantPhone = '+998901234567';
+  let assistant = await prisma.user.findUnique({
+    where: { phone: assistantPhone },
+  });
+
+  if (!assistant) {
+    assistant = await prisma.user.create({
+      data: {
+        name: 'Yordamchi Ali',
+        phone: assistantPhone,
+      },
+    });
+    console.log(`👷 Yordamchi yaratildi: ${assistant.name} (${assistant.phone})`);
+  }
+
+  // Add assistant to shop if not already a member
+  const existingAssistant = await prisma.shopMember.findUnique({
+    where: { userId_shopId: { userId: assistant.id, shopId } },
+  });
+
+  if (!existingAssistant) {
+    await prisma.shopMember.create({
+      data: {
+        userId: assistant.id,
+        shopId,
+        role: 'ASSISTANT',
+      },
+    });
+    console.log(`✅ Yordamchi do'konga qo'shildi`);
+  }
+
   console.log(`📦 ${count} ta mijoz yaratiladi...\n`);
 
   const now = new Date();
@@ -100,10 +165,10 @@ async function main() {
     const template = DEFAULT_CUSTOMERS[i];
     const overdueTemplate = OVERDUE_TEMPLATES[i];
 
-    // Create or find customer
+    // Create or find customer (now scoped to shop, not user)
     let customer = await prisma.customer.findFirst({
       where: {
-        userId: user.id,
+        shopId,
         phone: template.phone,
       },
       select: { id: true, name: true, phone: true },
@@ -115,7 +180,7 @@ async function main() {
     } else {
       customer = await prisma.customer.create({
         data: {
-          userId: user.id,
+          shopId,
           name: template.name,
           phone: template.phone,
         },
@@ -128,7 +193,7 @@ async function main() {
     // Create overdue DEBT transaction
     const existing = await prisma.transaction.findFirst({
       where: {
-        userId: user.id,
+        shopId,
         customerId: customer.id,
         note: overdueTemplate.note,
       },
@@ -149,7 +214,8 @@ async function main() {
 
     await prisma.transaction.create({
       data: {
-        userId: user.id,
+        shopId,
+        createdById: user.id,
         customerId: customer.id,
         type: 'DEBT',
         amount: overdueTemplate.amount,
@@ -170,6 +236,7 @@ async function main() {
   }
 
   console.log('\n────────────────────────────────────');
+  console.log(`🏪 Do'kon:         ${shopMembership!.shop.name}`);
   console.log(`👥 Mijozlar:       ${customersCreated} yaratildi, ${customersSkipped} mavjud`);
   console.log(`💳 Tranzaksiyalar: ${transactionsCreated} yaratildi, ${transactionsSkipped} mavjud`);
   console.log('────────────────────────────────────');

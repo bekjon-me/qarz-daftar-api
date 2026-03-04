@@ -7,17 +7,17 @@ interface DashboardSummary {
   customerCount: number;
 }
 
-export async function getSummary(userId: string): Promise<DashboardSummary> {
+export async function getSummary(shopId: string): Promise<DashboardSummary> {
   const [debtAgg, paymentAgg, customerCount] = await Promise.all([
     prisma.transaction.aggregate({
-      where: { userId, type: 'DEBT' },
+      where: { shopId, type: 'DEBT' },
       _sum: { amount: true },
     }),
     prisma.transaction.aggregate({
-      where: { userId, type: 'PAYMENT' },
+      where: { shopId, type: 'PAYMENT' },
       _sum: { amount: true },
     }),
-    prisma.customer.count({ where: { userId } }),
+    prisma.customer.count({ where: { shopId } }),
   ]);
 
   const totalDebt = debtAgg._sum.amount ?? 0;

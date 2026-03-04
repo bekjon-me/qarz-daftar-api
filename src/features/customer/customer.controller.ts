@@ -9,7 +9,7 @@ export async function create(
   next: NextFunction,
 ) {
   try {
-    const customer = await customerService.create(req.user!.userId, req.body);
+    const customer = await customerService.create(req.shop!.shopId, req.body);
 
     res.status(201).json({
       success: true,
@@ -27,7 +27,7 @@ export async function list(
 ) {
   try {
     const query = customerListSchema.parse(req.query);
-    const result = await customerService.list(req.user!.userId, query);
+    const result = await customerService.list(req.shop!.shopId, query);
 
     res.json({
       success: true,
@@ -46,7 +46,7 @@ export async function getById(
 ) {
   try {
     const { id } = customerIdSchema.parse(req.params);
-    const customer = await customerService.getById(req.user!.userId, id);
+    const customer = await customerService.getById(req.shop!.shopId, id);
 
     res.json({
       success: true,
@@ -65,7 +65,7 @@ export async function update(
   try {
     const { id } = customerIdSchema.parse(req.params);
     const customer = await customerService.update(
-      req.user!.userId,
+      req.shop!.shopId,
       id,
       req.body,
     );
@@ -86,7 +86,7 @@ export async function remove(
 ) {
   try {
     const { id } = customerIdSchema.parse(req.params);
-    await customerService.remove(req.user!.userId, id);
+    await customerService.remove(req.shop!.shopId, id);
 
     res.json({
       success: true,

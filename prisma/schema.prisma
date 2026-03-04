@@ -13,6 +13,13 @@ enum TransactionType {
   @@map("transaction_type")
 }
 
+enum ShopRole {
+  OWNER
+  ASSISTANT
+
+  @@map("shop_role")
+}
+
 model User {
   id             String   @id @default(uuid())
   name           String   @default("Hurmatli mijoz")
@@ -24,47 +31,79 @@ model User {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  customers     Customer[]
-  transactions  Transaction[]
-  notifications Notification[]
+  shopMembers        ShopMember[]
+  createdTransactions Transaction[]
+  notifications      Notification[]
 
   @@map("users")
 }
 
-model Customer {
+model Shop {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  members       ShopMember[]
+  customers     Customer[]
+  transactions  Transaction[]
+  notifications Notification[]
+
+  @@map("shops")
+}
+
+model ShopMember {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
+  shopId    String   @map("shop_id")
+  role      ShopRole @default(ASSISTANT)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, shopId])
+  @@index([userId])
+  @@index([shopId])
+  @@map("shop_members")
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  shopId    String   @map("shop_id")
   name      String
   phone     String?
   note      String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop          Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
   transactions  Transaction[]
   notifications Notification[]
 
-  @@index([userId])
+  @@index([shopId])
   @@map("customers")
 }
 
 model Transaction {
-  id         String          @id @default(uuid())
-  userId     String          @map("user_id")
-  customerId String          @map("customer_id")
-  type       TransactionType
+  id                 String          @id @default(uuid())
+  shopId             String          @map("shop_id")
+  createdById        String          @map("created_by_id")
+  customerId         String          @map("customer_id")
+  type               TransactionType
   amount             Int
   note               String?
   expectedReturnDate DateTime?       @map("expected_return_date")
   createdAt          DateTime        @default(now()) @map("created_at")
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  createdBy    User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
   customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
   notification Notification?
 
-  @@index([userId])
+  @@index([shopId])
   @@index([customerId])
-  @@index([userId, createdAt])
+  @@index([shopId, createdAt])
   @@map("transactions")
 }
 
@@ -76,23 +115,24 @@ enum NotificationType {
 }
 
 model Notification {
-  id         String           @id @default(uuid())
-  userId     String           @map("user_id")
-  type       NotificationType
-  title      String
-  message    String
-  isRead     Boolean          @default(false) @map("is_read")
-  // For PAYMENT_DUE: link to the customer + transaction that triggered it
-  customerId String?          @map("customer_id")
-  transactionId String?       @unique @map("transaction_id")
-  createdAt  DateTime         @default(now()) @map("created_at")
+  id            String           @id @default(uuid())
+  userId        String           @map("user_id")
+  shopId        String           @map("shop_id")
+  type          NotificationType
+  title         String
+  message       String
+  isRead        Boolean          @default(false) @map("is_read")
+  customerId    String?          @map("customer_id")
+  transactionId String?          @unique @map("transaction_id")
+  createdAt     DateTime         @default(now()) @map("created_at")
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop        Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
   transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt])
-  @@index([userId, isRead])
+  @@index([userId, shopId, createdAt])
+  @@index([userId, shopId, isRead])
   @@map("notifications")
 }
 

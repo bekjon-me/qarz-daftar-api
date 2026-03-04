@@ -8,7 +8,7 @@ export async function getSummary(
   next: NextFunction,
 ) {
   try {
-    const summary = await dashboardService.getSummary(req.user!.userId);
+    const summary = await dashboardService.getSummary(req.shop!.shopId);
 
     res.json({
       success: true,

@@ -37,10 +37,10 @@ async function computeBalance(customerId: string): Promise<number> {
   return totalDebt - totalPayment;
 }
 
-export async function create(userId: string, input: CreateCustomerInput) {
+export async function create(shopId: string, input: CreateCustomerInput) {
   const customer = await prisma.customer.create({
     data: {
-      userId,
+      shopId,
       name: input.name,
       phone: input.phone || null,
       note: input.note || null,
@@ -51,12 +51,12 @@ export async function create(userId: string, input: CreateCustomerInput) {
   return { ...customer, balance: 0 };
 }
 
-export async function list(userId: string, input: CustomerListInput) {
+export async function list(shopId: string, input: CustomerListInput) {
   const { search, hasDebt, page, limit } = input;
   const skip = (page - 1) * limit;
 
   const where = {
-    userId,
+    shopId,
     ...(search && {
       OR: [
         { name: { contains: search, mode: 'insensitive' as const } },
@@ -117,9 +117,9 @@ export async function list(userId: string, input: CustomerListInput) {
   };
 }
 
-export async function getById(userId: string, customerId: string) {
+export async function getById(shopId: string, customerId: string) {
   const customer = await prisma.customer.findFirst({
-    where: { id: customerId, userId },
+    where: { id: customerId, shopId },
     select: customerSelect,
   });
 
@@ -133,13 +133,13 @@ export async function getById(userId: string, customerId: string) {
 }
 
 export async function update(
-  userId: string,
+  shopId: string,
   customerId: string,
   input: UpdateCustomerInput,
 ) {
   // Verify ownership
   const existing = await prisma.customer.findFirst({
-    where: { id: customerId, userId },
+    where: { id: customerId, shopId },
   });
 
   if (!existing) {
@@ -163,10 +163,10 @@ export async function update(
   return { ...customer, balance };
 }
 
-export async function remove(userId: string, customerId: string) {
+export async function remove(shopId: string, customerId: string) {
   // Verify ownership
   const existing = await prisma.customer.findFirst({
-    where: { id: customerId, userId },
+    where: { id: customerId, shopId },
   });
 
   if (!existing) {

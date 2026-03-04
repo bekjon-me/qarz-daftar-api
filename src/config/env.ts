@@ -33,4 +33,11 @@ export const env = {
 
   // Notification scheduler cron (default: 04:00 UTC = 09:00 UZT)
   CRON_SCHEDULE: process.env.CRON_SCHEDULE || '0 4 * * *',
+
+  // Shop limits (free plan)
+  MAX_OWNED_SHOPS: parseInt(process.env.MAX_OWNED_SHOPS || '1', 10),
+  MAX_ASSISTANTS_PER_SHOP: parseInt(
+    process.env.MAX_ASSISTANTS_PER_SHOP || '1',
+    10,
+  ),
 } as const;

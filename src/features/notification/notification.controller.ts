@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../../types/index.js';
 import { env } from '../../config/env.js';
 import * as notificationService from './notification.service.js';
-import { processAllUsersNotifications } from '../../services/scheduler.service.js';
+import { processAllShopsNotifications } from '../../services/scheduler.service.js';
 import { ApiError } from '../../utils/api-error.js';
 import {
   notificationListSchema,
@@ -15,11 +15,10 @@ export async function list(
   next: NextFunction,
 ) {
   try {
+    const userId = req.user!.userId;
+    const shopId = req.shop!.shopId;
     const query = notificationListSchema.parse(req.query);
-    const notifications = await notificationService.list(
-      req.user!.userId,
-      query,
-    );
+    const notifications = await notificationService.list(userId, shopId, query);
     res.json({ success: true, data: notifications });
   } catch (error) {
     next(error);
@@ -32,8 +31,10 @@ export async function markAsRead(
   next: NextFunction,
 ) {
   try {
+    const userId = req.user!.userId;
+    const shopId = req.shop!.shopId;
     const { id } = notificationIdParamSchema.parse(req.params);
-    await notificationService.markAsRead(req.user!.userId, id);
+    await notificationService.markAsRead(userId, shopId, id);
     res.json({ success: true, message: "Bildirishnoma o'qildi" });
   } catch (error) {
     next(error);
@@ -46,7 +47,9 @@ export async function markAllAsRead(
   next: NextFunction,
 ) {
   try {
-    await notificationService.markAllAsRead(req.user!.userId);
+    const userId = req.user!.userId;
+    const shopId = req.shop!.shopId;
+    await notificationService.markAllAsRead(userId, shopId);
     res.json({
       success: true,
       message: "Barcha bildirishnomalar o'qildi",
@@ -62,7 +65,9 @@ export async function clearAll(
   next: NextFunction,
 ) {
   try {
-    await notificationService.clearAll(req.user!.userId);
+    const userId = req.user!.userId;
+    const shopId = req.shop!.shopId;
+    await notificationService.clearAll(userId, shopId);
     res.json({
       success: true,
       message: "Barcha bildirishnomalar o'chirildi",
@@ -78,7 +83,9 @@ export async function getUnreadCount(
   next: NextFunction,
 ) {
   try {
-    const count = await notificationService.getUnreadCount(req.user!.userId);
+    const userId = req.user!.userId;
+    const shopId = req.shop!.shopId;
+    const count = await notificationService.getUnreadCount(userId, shopId);
     res.json({ success: true, data: { count } });
   } catch (error) {
     next(error);
@@ -97,7 +104,7 @@ export async function trigger(
       );
     }
 
-    await processAllUsersNotifications();
+    await processAllShopsNotifications();
     res.json({
       success: true,
       message: 'Bildirishnomalar tekshirildi va yuborildi',

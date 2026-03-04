@@ -24,6 +24,23 @@ const userSelect = {
   createdAt: true,
 } as const;
 
+async function getUserShops(userId: string) {
+  const memberships = await prisma.shopMember.findMany({
+    where: { userId },
+    include: {
+      shop: { select: { id: true, name: true, createdAt: true } },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  return memberships.map((m) => ({
+    id: m.shop.id,
+    name: m.shop.name,
+    role: m.role,
+    createdAt: m.shop.createdAt,
+  }));
+}
+
 export async function register(input: RegisterInput) {
   const existingUser = await prisma.user.findUnique({
     where: { phone: input.phone },
@@ -106,7 +123,8 @@ export async function verifyOtp(phone: string, code: string) {
   }
 
   const token = generateToken(user.id);
-  return { user, token, isNewUser };
+  const shops = await getUserShops(user.id);
+  return { user, token, isNewUser, shops };
 }
 
 export async function googleSignIn(
@@ -169,6 +187,7 @@ export async function googleSignIn(
   }
 
   const token = generateToken(user.id);
+  const shops = await getUserShops(user.id);
   return {
     user: {
       id: user.id,
@@ -178,6 +197,7 @@ export async function googleSignIn(
     },
     token,
     isNewUser,
+    shops,
   };
 }
 
@@ -191,7 +211,8 @@ export async function getProfile(userId: string) {
     throw ApiError.notFound('Foydalanuvchi topilmadi');
   }
 
-  return user;
+  const shops = await getUserShops(userId);
+  return { ...user, shops };
 }
 
 export async function updateName(userId: string, name: string) {

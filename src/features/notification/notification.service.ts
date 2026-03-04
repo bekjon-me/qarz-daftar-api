@@ -9,11 +9,18 @@ const notificationSelect = {
   message: true,
   isRead: true,
   customerId: true,
+  transactionId: true,
   createdAt: true,
   customer: {
     select: {
       name: true,
       phone: true,
+    },
+  },
+  transaction: {
+    select: {
+      amount: true,
+      expectedReturnDate: true,
     },
   },
 } as const;
@@ -23,7 +30,10 @@ const notificationSelect = {
  * where expectedReturnDate is today or past and no notification
  * has been created yet for that transaction.
  */
-export async function generatePaymentDueNotifications(userId: string) {
+export async function generatePaymentDueNotifications(
+  userId: string,
+  shopId: string,
+) {
   const now = new Date();
   // End of today (to catch all transactions due today)
   const endOfToday = new Date(
@@ -40,7 +50,7 @@ export async function generatePaymentDueNotifications(userId: string) {
   // that don't already have a notification
   const dueTransactions = await prisma.transaction.findMany({
     where: {
-      userId,
+      shopId,
       type: 'DEBT',
       expectedReturnDate: {
         lte: endOfToday,
@@ -66,6 +76,7 @@ export async function generatePaymentDueNotifications(userId: string) {
   // Create notifications for each due transaction
   const notifications = dueTransactions.map((tx) => ({
     userId,
+    shopId,
     type: 'PAYMENT_DUE' as const,
     title: "To'lov muddati keldi",
     message: `${tx.customer.name} bugun ${formatAmount(tx.amount)} so'm qaytarishi kerak`,
@@ -83,12 +94,16 @@ export async function generatePaymentDueNotifications(userId: string) {
  * Get all notifications for a user, newest first.
  * Also triggers auto-generation of payment_due notifications.
  */
-export async function list(userId: string, input: NotificationListInput) {
+export async function list(
+  userId: string,
+  shopId: string,
+  input: NotificationListInput,
+) {
   // Auto-generate payment due notifications before listing
-  await generatePaymentDueNotifications(userId);
+  await generatePaymentDueNotifications(userId, shopId);
 
   const notifications = await prisma.notification.findMany({
-    where: { userId },
+    where: { userId, shopId },
     select: notificationSelect,
     orderBy: { createdAt: 'desc' },
     take: input.limit,
@@ -103,6 +118,9 @@ export async function list(userId: string, input: NotificationListInput) {
     customerId: n.customerId,
     customerName: n.customer?.name ?? null,
     customerPhone: n.customer?.phone ?? null,
+    transactionId: n.transactionId,
+    transactionAmount: n.transaction?.amount ?? null,
+    expectedReturnDate: n.transaction?.expectedReturnDate ?? null,
     createdAt: n.createdAt,
   }));
 }
@@ -110,9 +128,13 @@ export async function list(userId: string, input: NotificationListInput) {
 /**
  * Mark a single notification as read.
  */
-export async function markAsRead(userId: string, notificationId: string) {
+export async function markAsRead(
+  userId: string,
+  shopId: string,
+  notificationId: string,
+) {
   const notification = await prisma.notification.findFirst({
-    where: { id: notificationId, userId },
+    where: { id: notificationId, userId, shopId },
     select: { id: true },
   });
 
@@ -129,9 +151,9 @@ export async function markAsRead(userId: string, notificationId: string) {
 /**
  * Mark all notifications as read for a user.
  */
-export async function markAllAsRead(userId: string) {
+export async function markAllAsRead(userId: string, shopId: string) {
   await prisma.notification.updateMany({
-    where: { userId, isRead: false },
+    where: { userId, shopId, isRead: false },
     data: { isRead: true },
   });
 }
@@ -139,21 +161,21 @@ export async function markAllAsRead(userId: string) {
 /**
  * Delete all notifications for a user.
  */
-export async function clearAll(userId: string) {
+export async function clearAll(userId: string, shopId: string) {
   await prisma.notification.deleteMany({
-    where: { userId },
+    where: { userId, shopId },
   });
 }
 
 /**
  * Get count of unread notifications.
  */
-export async function getUnreadCount(userId: string) {
+export async function getUnreadCount(userId: string, shopId: string) {
   // Also trigger auto-generation before counting
-  await generatePaymentDueNotifications(userId);
+  await generatePaymentDueNotifications(userId, shopId);
 
   const count = await prisma.notification.count({
-    where: { userId, isRead: false },
+    where: { userId, shopId, isRead: false },
   });
 
   return count;

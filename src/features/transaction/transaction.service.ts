@@ -21,10 +21,14 @@ const transactionSelect = {
   },
 } as const;
 
-export async function create(userId: string, input: CreateTransactionInput) {
-  // Verify customer belongs to user
+export async function create(
+  shopId: string,
+  createdById: string,
+  input: CreateTransactionInput,
+) {
+  // Verify customer belongs to shop
   const customer = await prisma.customer.findFirst({
-    where: { id: input.customerId, userId },
+    where: { id: input.customerId, shopId },
     select: { id: true },
   });
 
@@ -34,7 +38,8 @@ export async function create(userId: string, input: CreateTransactionInput) {
 
   const transaction = await prisma.transaction.create({
     data: {
-      userId,
+      shopId,
+      createdById,
       customerId: input.customerId,
       type: input.type,
       amount: input.amount,
@@ -58,9 +63,9 @@ export async function create(userId: string, input: CreateTransactionInput) {
   };
 }
 
-export async function listRecent(userId: string, input: TransactionListInput) {
+export async function listRecent(shopId: string, input: TransactionListInput) {
   const transactions = await prisma.transaction.findMany({
-    where: { userId },
+    where: { shopId },
     select: transactionSelect,
     orderBy: { createdAt: 'desc' },
     take: input.limit,
@@ -78,9 +83,9 @@ export async function listRecent(userId: string, input: TransactionListInput) {
   }));
 }
 
-export async function remove(userId: string, transactionId: string) {
+export async function remove(shopId: string, transactionId: string) {
   const transaction = await prisma.transaction.findFirst({
-    where: { id: transactionId, userId },
+    where: { id: transactionId, shopId },
     select: { id: true },
   });
 
@@ -94,13 +99,13 @@ export async function remove(userId: string, transactionId: string) {
 }
 
 export async function listByCustomer(
-  userId: string,
+  shopId: string,
   customerId: string,
   input: CustomerTransactionsInput,
 ) {
-  // Verify customer belongs to user
+  // Verify customer belongs to shop
   const customer = await prisma.customer.findFirst({
-    where: { id: customerId, userId },
+    where: { id: customerId, shopId },
     select: { id: true },
   });
 
@@ -113,7 +118,7 @@ export async function listByCustomer(
 
   const [transactions, total] = await Promise.all([
     prisma.transaction.findMany({
-      where: { customerId, userId },
+      where: { customerId, shopId },
       select: {
         id: true,
         customerId: true,
@@ -127,7 +132,7 @@ export async function listByCustomer(
       skip,
       take: limit,
     }),
-    prisma.transaction.count({ where: { customerId, userId } }),
+    prisma.transaction.count({ where: { customerId, shopId } }),
   ]);
 
   return {

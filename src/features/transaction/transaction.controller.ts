@@ -14,8 +14,11 @@ export async function create(
   next: NextFunction,
 ) {
   try {
+    const shopId = req.shop!.shopId;
+    const userId = req.user!.userId;
     const transaction = await transactionService.create(
-      req.user!.userId,
+      shopId,
+      userId,
       req.body,
     );
 
@@ -34,11 +37,9 @@ export async function listRecent(
   next: NextFunction,
 ) {
   try {
+    const shopId = req.shop!.shopId;
     const query = transactionListSchema.parse(req.query);
-    const transactions = await transactionService.listRecent(
-      req.user!.userId,
-      query,
-    );
+    const transactions = await transactionService.listRecent(shopId, query);
 
     res.json({
       success: true,
@@ -55,8 +56,9 @@ export async function remove(
   next: NextFunction,
 ) {
   try {
+    const shopId = req.shop!.shopId;
     const { id } = transactionIdParamSchema.parse(req.params);
-    await transactionService.remove(req.user!.userId, id);
+    await transactionService.remove(shopId, id);
 
     res.json({
       success: true,
@@ -73,10 +75,11 @@ export async function listByCustomer(
   next: NextFunction,
 ) {
   try {
+    const shopId = req.shop!.shopId;
     const { customerId } = customerIdParamSchema.parse(req.params);
     const query = customerTransactionsSchema.parse(req.query);
     const result = await transactionService.listByCustomer(
-      req.user!.userId,
+      shopId,
       customerId,
       query,
     );
